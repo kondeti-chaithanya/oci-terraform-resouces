@@ -11,16 +11,25 @@ on:
 
   workflow_dispatch:
     inputs:
-      action:
-        description: "Terraform Action"
+      confirm:
+        description: "Type APPLY to deploy"
         required: true
-        default: "apply"
-        type: choice
-        options:
-          - apply
+        default: "NO"
 
 permissions:
   contents: read
+
+env:
+  TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
+  TF_VAR_user_ocid: ${{ secrets.OCI_USER_OCID }}
+  TF_VAR_compartment_id: ${{ secrets.OCI_COMPARTMENT_OCID }}
+  TF_VAR_region: ${{ secrets.OCI_REGION }}
+  TF_VAR_fingerprint: ${{ secrets.OCI_FINGERPRINT }}
+  TF_VAR_private_key_path: /home/runner/.oci/oci_api_key.pem
+  TF_VAR_admin_password: ${{ secrets.DB_ADMIN_PASSWORD }}
+
+  AWS_ACCESS_KEY_ID: ${{ secrets.OCI_ACCESS_KEY }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.OCI_SECRET_KEY }}
 
 jobs:
 
@@ -34,36 +43,28 @@ jobs:
       run:
         working-directory: environments/dev
 
-    env:
-      TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
-      TF_VAR_user_ocid: ${{ secrets.OCI_USER_OCID }}
-      TF_VAR_compartment_id: ${{ secrets.OCI_COMPARTMENT_OCID }}
-      TF_VAR_region: ${{ secrets.OCI_REGION }}
-      TF_VAR_fingerprint: ${{ secrets.OCI_FINGERPRINT }}
-      TF_VAR_private_key_path: /home/runner/.oci/oci_api_key.pem
-      TF_VAR_admin_password: ${{ secrets.DB_ADMIN_PASSWORD }}
-
-      AWS_ACCESS_KEY_ID: ${{ secrets.OCI_ACCESS_KEY }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.OCI_SECRET_KEY }}
-
     steps:
 
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v3
 
       - name: Create OCI API Key
         run: |
           mkdir -p ~/.oci
-          echo "${{ secrets.OCI_PRIVATE_KEY }}" > ~/.oci/oci_api_key.pem
+          printf "%s" "${{ secrets.OCI_PRIVATE_KEY }}" > ~/.oci/oci_api_key.pem
           chmod 600 ~/.oci/oci_api_key.pem
+
+      - name: Verify Backend Credentials
+        run: |
+          test -n "$AWS_ACCESS_KEY_ID"
+          test -n "$AWS_SECRET_ACCESS_KEY"
+          echo "Backend credentials found."
 
       - name: Terraform Init
         run: terraform init -reconfigure
 
-      - name: Terraform Format Check
+      - name: Terraform Format
         run: terraform fmt -check -recursive
 
       - name: Terraform Validate
@@ -72,49 +73,43 @@ jobs:
       - name: Terraform Plan
         run: terraform plan -out=tfplan
 
-      - name: Upload Terraform Plan
+      - name: Upload Plan
         uses: actions/upload-artifact@v4
         with:
-          name: terraform-plan
+          name: tfplan
           path: environments/dev/tfplan
 
   terraform-apply:
 
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.confirm == 'APPLY'
+
+    needs: []
 
     runs-on: ubuntu-latest
+
+    environment: dev
 
     defaults:
       run:
         working-directory: environments/dev
 
-    environment: dev
-
-    env:
-      TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
-      TF_VAR_user_ocid: ${{ secrets.OCI_USER_OCID }}
-      TF_VAR_compartment_id: ${{ secrets.OCI_COMPARTMENT_OCID }}
-      TF_VAR_region: ${{ secrets.OCI_REGION }}
-      TF_VAR_fingerprint: ${{ secrets.OCI_FINGERPRINT }}
-      TF_VAR_private_key_path: /home/runner/.oci/oci_api_key.pem
-      TF_VAR_admin_password: ${{ secrets.DB_ADMIN_PASSWORD }}
-
-      AWS_ACCESS_KEY_ID: ${{ secrets.OCI_ACCESS_KEY }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.OCI_SECRET_KEY }}
-
     steps:
 
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v3
 
       - name: Create OCI API Key
         run: |
           mkdir -p ~/.oci
-          echo "${{ secrets.OCI_PRIVATE_KEY }}" > ~/.oci/oci_api_key.pem
+          printf "%s" "${{ secrets.OCI_PRIVATE_KEY }}" > ~/.oci/oci_api_key.pem
           chmod 600 ~/.oci/oci_api_key.pem
+
+      - name: Verify Backend Credentials
+        run: |
+          test -n "$AWS_ACCESS_KEY_ID"
+          test -n "$AWS_SECRET_ACCESS_KEY"
+          echo "Backend credentials found."
 
       - name: Terraform Init
         run: terraform init -reconfigure
