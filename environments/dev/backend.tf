@@ -1,5 +1,4 @@
 terraform {
-
   backend "s3" {
 
     bucket = "terraform-state-bucket"
@@ -8,16 +7,15 @@ terraform {
 
     region = "ap-hyderabad-1"
 
-    endpoint = "https://axrmhle1x89t.compat.objectstorage.ap-hyderabad-1.oraclecloud.com"
+    endpoints = {
+      s3 = "https://axrmhle1x89t.compat.objectstorage.ap-hyderabad-1.oraclecloud.com"
+    }
 
-    skip_region_validation = true
-
+    skip_region_validation      = true
     skip_credentials_validation = true
+    skip_metadata_api_check     = true
+    skip_requesting_account_id  = true
 
-    skip_metadata_api_check = true
-
-    force_path_style = true
-
+    use_path_style = true
   }
-
 }
