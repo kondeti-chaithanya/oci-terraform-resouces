@@ -1,0 +1,18 @@
+# Terraform
+.terraform/
+**/.terraform/
+
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# Variable files
+terraform.tfvars
+*.auto.tfvars
+
+# OCI Keys
+*.pem
+*.key
+
+# Crash logs
+crash.log
