@@ -8,7 +8,7 @@ terraform {
     region = "ap-hyderabad-1"
 
     endpoints = {
-      s3 = "ocid1.bucket.oc1.ap-hyderabad-1.aaaaaaaappylzajdzl2dlbgpfqp6j5mwvmn3bggogg7nqk5mfhb7s4n3lmua"
+      s3 = "https://axrmlhe1x89t.compat.objectstorage.ap-hyderabad-1.oraclecloud.com"
     }
 
     skip_region_validation      = true
