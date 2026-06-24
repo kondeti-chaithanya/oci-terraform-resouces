@@ -7,7 +7,7 @@
 .terraform.lock.hcl
 
 # Variable files
-terraform.tfvars
+
 *.auto.tfvars
 
 # OCI Keys
